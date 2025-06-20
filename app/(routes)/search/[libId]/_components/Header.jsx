@@ -5,6 +5,7 @@ import moment from 'moment'
 import React from 'react'
 
 function Header({ searchInputRecord }) {
+  console.log("searchInputRecord in Header:");
   console.log(searchInputRecord);
   return (
     <div className='p-4 border-b flex items-center justify-between'>

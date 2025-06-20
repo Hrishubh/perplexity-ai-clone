@@ -6,10 +6,12 @@ import {
 	LucideVideo,
 } from "lucide-react";
 import AnswerDisplay from "./AnswerDisplay";
+import ImageListTab from "./ImageListTab";
 import axios from "axios";
 import { SEARCH_RESULT } from "@/services/Shared";
 import { useParams } from "next/navigation";
 import { supabase } from "@/services/supabase";
+import SourceListTab from "./SourceListTab";
 
 const tabs = [
 	{ label: "Answer", icon: LucideSparkles },
@@ -20,22 +22,27 @@ const tabs = [
 
 function DisplayResult({ searchInputRecord }) {
 	const [activeTab, setActiveTab] = useState("Answer");
-	const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
+	// const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
+	const [searchResult, setSearchResult] = useState(searchInputRecord);
 	const { libId } = useParams();
 
 	useEffect(() => {
-		// Update this method to fetch the search results from the API
-		searchInputRecord && GetSearchApiResult();
+		searchInputRecord?.Chats?.length==0 && GetSearchApiResult();
+		setSearchResult(searchInputRecord);
+		console.log("searchInputRecord:");
+		console.log(searchInputRecord);
 	}, [searchInputRecord]);
 
 	const GetSearchApiResult = async () => {
-		// const result = await axios.post('/api/brave-search-api', {
-		// 	searchInput: searchInputRecord?.searchInput,
-		// 	searchType: searchInputRecord?.type,
-		// });
+		const result = await axios.post("/api/brave-search-api", {
+			searchInput: searchInputRecord?.searchInput,
+			searchType: searchInputRecord?.type,
+		});
 
-		// console.log(result.data);
-		const searchResp = SEARCH_RESULT;
+		console.log("Brave Search Response");
+		console.log(result.data);
+		setSearchResult(result.data);
+		const searchResp = result.data;
 
 		// Formatting to send to Database
 		const formattedSearchResp = searchResp?.web?.results?.map((item) => ({
@@ -47,73 +54,106 @@ function DisplayResult({ searchInputRecord }) {
 			thumbnail: item?.thumbnail?.src,
 		}));
 
+		console.log("Formatted Search Response");
 		console.log(formattedSearchResp);
 
 		// Send to Database
-		const { data, error } = await supabase.from('Chats').insert([
-			{
-				libId: libId,
-				searchResult: formattedSearchResp,
-			},
-		]).select();
+		const { data, error } = await supabase
+			.from("Chats")
+			.insert([
+				{
+					libId: libId,
+					searchResult: formattedSearchResp,
+					userSearchInput: searchInputRecord?.searchInput,
+				},
+			])
+			.select();
 
+		console.log("Confirmation of formatted search result being added to supabase");
 		console.log(data);
-		console.log(error);
 
 		// Pass to LLM Model to processing
-		await GenerateAIResp(formattedSearchResp);
+		await GenerateAIResp(formattedSearchResp, data[0].id);
 	};
 
-	const GenerateAIResp = async (formattedSearchResp) => {
+	const GenerateAIResp = async (formattedSearchResp, recordId) => {
 		const result = await axios.post("/api/llm-model", {
 			searchInput: searchInputRecord?.searchInput,
 			searchResult: formattedSearchResp,
-			libId: libId,
+			recordId: recordId,
 		});
 
-		console.log(result.data);
-	}
+		console.log("RunId of LLM Model, confirming the LLM Model has started");
+		console.log(result.data); //RunId of te LLM Model
+		const runId = result.data;
+
+		// Get the status of the LLM Model
+		const interval = setInterval(async () => {
+			const runResp = await axios.post(`/api/get-inngest-status`, {
+				runId: runId,
+			});
+
+			if (runResp.data.data[0].status == "Completed") {
+				clearInterval(interval);
+				console.log("LLM Model has completed");
+				console.log(runResp);
+				
+			}
+		}, 1000);
+	};
 
 	return (
 		<div className="mt-7">
-			<h2 className="line-clamp-2 font-medium text-3xl">
+			{/* <h2 className="line-clamp-2 font-medium text-3xl">
 				{searchInputRecord?.searchInput}
-			</h2>
-			<div className="flex items-center space-x-6 border-b border-gray-200 pb-2 mt-6">
-				{tabs.map(({ label, icon: Icon, badge }) => (
-					<button
-						key={label}
-						onClick={() => setActiveTab(label)}
-						className={`flex items-center gap-1 relative text-sm font-medium text-gray-700 hover:text-black ${
-							activeTab === label ? "text-black" : ""
-						}`}
-					>
-						<Icon className="w-4 h-4" />
+			</h2> */}
+			{searchResult?.Chats?.map((chat, index) => (
+				<div key={index} className="mt-7">
+					<h2 className="line-clamp-2 font-bold text-4xl text-gray-600">
+						{chat?.userSearchInput}
+					</h2>
+					<div className="flex items-center space-x-6 border-b border-gray-200 pb-2 mt-6">
+						{tabs.map(({ label, icon: Icon, badge }) => (
+							<button
+								key={label}
+								onClick={() => setActiveTab(label)}
+								className={`flex items-center gap-1 relative text-sm font-medium text-gray-700 hover:text-black ${
+									activeTab === label ? "text-black" : ""
+								}`}
+							>
+								<Icon className="w-4 h-4" />
 
-						<span>{label}</span>
+								<span>{label}</span>
 
-						{badge && (
-							<span className="ml-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-								{badge}
-							</span>
-						)}
+								{badge && (
+									<span className="ml-1 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+										{badge}
+									</span>
+								)}
 
-						{activeTab === label && (
-							<span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
-						)}
-					</button>
-				))}
+								{activeTab === label && (
+									<span className="absolute -bottom-2 left-0 w-full h-0.5 bg-black rounded"></span>
+								)}
+							</button>
+						))}
 
-				<div className="ml-auto text-sm text-gray-500">
-					1 task <span className="ml-1">↗</span>
+						<div className="ml-auto text-sm text-gray-500">
+							1 task <span className="ml-1">↗</span>
+						</div>
+					</div>
+
+					<div>
+						{activeTab == "Answer" ? (
+							<AnswerDisplay chat={chat} />
+						) : activeTab == "Images" ? (
+							<ImageListTab chat={chat} />
+						) : activeTab == "Sources" ? (
+							<SourceListTab chat={chat} />
+						) : null}
+					</div>
+					<hr className="mt-5 mb-10" />
 				</div>
-			</div>
-
-			<div>
-				{activeTab == "Answer" ? (
-					<AnswerDisplay searchResult={searchResult} />
-				) : null}
-			</div>
+			))}
 		</div>
 	);
 }

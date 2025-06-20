@@ -16,16 +16,16 @@ function SearchQueryResult() {
   const GetSearchQueryRecord = async ()=>{
     let { data: Library, error } = await supabase
     .from('Library')
-    .select('*')
+    .select('*, Chats(*)')
     .eq('libId', libId);
 
-    // console.log(Library[0]);
-    setSearchInputRecord(Library[0]);
+    console.log("Fetched Library Data with chat data and everything. This is also the searchInputRecord:");
+    console.log(Library[0]);
+    await setSearchInputRecord(Library[0]);
   }
 
   return (
     <div>
-      {/* {console.log(searchInputRecord)} */}
       <Header searchInputRecord={searchInputRecord}/>
       <div className='px-10 md:px-20 lg:px-36 xl:px-56 mt-20'>
         <DisplayResult searchInputRecord={searchInputRecord}/>
