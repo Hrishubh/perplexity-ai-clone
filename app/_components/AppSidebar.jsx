@@ -55,18 +55,21 @@ function AppSidebar() {
           <SidebarMenu>
             {MenuOptions
             .filter(menu => !(user && menu.title === 'Sign In'))
-            .map((menu, index)=>(
-              <SidebarMenuItem key={index}>
-                <SidebarMenuButton asChild 
-                className={`p-5 py-6 hover:bg-transparent hover:font-bold 
-                ${path?.includes(menu.path)&&'font-bold'}`}>
-                  <a href={menu.path} className=''>
-                    <menu.icon className='h-8 w-8'/>
-                    <span className='text-lg'>{menu.title}</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            .map((menu, index) => {
+              const isActive = menu.path === '/' ? path === '/' : path.startsWith(menu.path) && menu.path !== '/';
+              return (
+                <SidebarMenuItem key={index}>
+                  <SidebarMenuButton asChild
+                    className={`p-5 py-6 hover:bg-transparent hover:font-bold 
+                    ${isActive ? 'font-bold' : ''}`}>
+                    <a href={menu.path} className=''>
+                      <menu.icon className='h-8 w-8'/>
+                      <span className='text-lg'>{menu.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
           {!user? 
           <SignUpButton>

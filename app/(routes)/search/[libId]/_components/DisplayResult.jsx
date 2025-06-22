@@ -29,7 +29,7 @@ function DisplayResult({ searchInputRecord }) {
 	const [searchResult, setSearchResult] = useState(searchInputRecord);
 	const { libId } = useParams();
 	const [loadingSearch, setLoadingSearch] = useState(false);
-	const [userInput, setUserInput] = useState("");
+	const [userInput, setUserInput] = useState();
 
 	useEffect(() => {
 		searchInputRecord?.Chats?.length == 0
