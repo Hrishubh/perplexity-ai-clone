@@ -108,6 +108,13 @@
   --font-instrument-serif: "instrumentSerif", Georgia, "Times New Roman", Times, serif;
 }
 
+:root {
+  --bg-custom: oklch(0.983 0.0067 115.7);
+}
+
+body {
+  background-color: var(--bg-custom);
+}
 * {
   font-family: var(--font-fk-grotesk-neue);
 }

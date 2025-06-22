@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
+	Loader2Icon,
 	LucideImage,
 	LucideList,
 	LucideSparkles,
 	LucideVideo,
+	Send,
 } from "lucide-react";
 import AnswerDisplay from "./AnswerDisplay";
 import ImageListTab from "./ImageListTab";
@@ -12,12 +14,13 @@ import { SEARCH_RESULT } from "@/services/Shared";
 import { useParams } from "next/navigation";
 import { supabase } from "@/services/supabase";
 import SourceListTab from "./SourceListTab";
+import { Button } from "@/components/ui/button";
 
 const tabs = [
 	{ label: "Answer", icon: LucideSparkles },
 	{ label: "Images", icon: LucideImage },
 	{ label: "Videos", icon: LucideVideo },
-	{ label: "Sources", icon: LucideList, badge: 10 },
+	{ label: "Sources", icon: LucideList, badge: 20 },
 ];
 
 function DisplayResult({ searchInputRecord }) {
@@ -25,18 +28,25 @@ function DisplayResult({ searchInputRecord }) {
 	// const [searchResult, setSearchResult] = useState(SEARCH_RESULT);
 	const [searchResult, setSearchResult] = useState(searchInputRecord);
 	const { libId } = useParams();
+	const [loadingSearch, setLoadingSearch] = useState(false);
+	const [userInput, setUserInput] = useState("");
 
 	useEffect(() => {
-		searchInputRecord?.Chats?.length==0 && GetSearchApiResult();
+		searchInputRecord?.Chats?.length == 0
+			? GetSearchApiResult()
+			: GetSearchRecords();
 		setSearchResult(searchInputRecord);
 		console.log("searchInputRecord:");
 		console.log(searchInputRecord);
 	}, [searchInputRecord]);
 
 	const GetSearchApiResult = async () => {
+		const tempInput = userInput ?? searchInputRecord?.searchInput;
+		setUserInput("");
+		setLoadingSearch(true);
 		const result = await axios.post("/api/brave-search-api", {
-			searchInput: searchInputRecord?.searchInput,
-			searchType: searchInputRecord?.type,
+			searchInput: tempInput,
+			searchType: searchInputRecord?.type ?? "Search",
 		});
 
 		console.log("Brave Search Response");
@@ -64,21 +74,25 @@ function DisplayResult({ searchInputRecord }) {
 				{
 					libId: libId,
 					searchResult: formattedSearchResp,
-					userSearchInput: searchInputRecord?.searchInput,
+					userSearchInput: tempInput,
 				},
 			])
 			.select();
 
-		console.log("Confirmation of formatted search result being added to supabase");
+		console.log(
+			"Confirmation of formatted search result being added to supabase"
+		);
 		console.log(data);
 
 		// Pass to LLM Model to processing
-		await GenerateAIResp(formattedSearchResp, data[0].id);
+		await GetSearchRecords();
+		setLoadingSearch(false);
+		await GenerateAIResp(formattedSearchResp, data[0].id, tempInput);
 	};
 
-	const GenerateAIResp = async (formattedSearchResp, recordId) => {
+	const GenerateAIResp = async (formattedSearchResp, recordId, tempInput) => {
 		const result = await axios.post("/api/llm-model", {
-			searchInput: searchInputRecord?.searchInput,
+			searchInput: tempInput,
 			searchResult: formattedSearchResp,
 			recordId: recordId,
 		});
@@ -96,10 +110,20 @@ function DisplayResult({ searchInputRecord }) {
 			if (runResp.data.data[0].status == "Completed") {
 				clearInterval(interval);
 				console.log("LLM Model has completed");
+				await GetSearchRecords();
 				console.log(runResp);
-				
 			}
 		}, 1000);
+	};
+
+	const GetSearchRecords = async () => {
+		let { data: Library, error } = await supabase
+			.from("Library")
+			.select("*, Chats(*)")
+			.eq("libId", libId)
+			.order("id", { foreignTable: "Chats", ascending: true });
+
+		setSearchResult(Library[0]);
 	};
 
 	return (
@@ -109,7 +133,7 @@ function DisplayResult({ searchInputRecord }) {
 			</h2> */}
 			{searchResult?.Chats?.map((chat, index) => (
 				<div key={index} className="mt-7">
-					<h2 className="line-clamp-2 font-bold text-4xl text-gray-600">
+					<h2 className="line-clamp-2 font-bold text-4xl text-gray-800">
 						{chat?.userSearchInput}
 					</h2>
 					<div className="flex items-center space-x-6 border-b border-gray-200 pb-2 mt-6">
@@ -144,16 +168,43 @@ function DisplayResult({ searchInputRecord }) {
 
 					<div>
 						{activeTab == "Answer" ? (
-							<AnswerDisplay chat={chat} />
+							<AnswerDisplay
+								chat={chat}
+								loadingSearch={loadingSearch}
+							/>
 						) : activeTab == "Images" ? (
 							<ImageListTab chat={chat} />
 						) : activeTab == "Sources" ? (
 							<SourceListTab chat={chat} />
 						) : null}
 					</div>
-					<hr className="mt-5 mb-10" />
+					<hr className="mt-5 mb-8" />
 				</div>
 			))}
+
+			<div
+				className="bg-white w-full border rounded-lg shadow-md p-2 px-5
+			fixed bottom-6 max-w-md lg:max-w-xl xl:max-w-3xl flex justify-between items-center"
+			>
+				<input
+					placeholder="Type Anything..."
+					className="outline-none w-[90%] h-[36px]"
+					onChange={(e) => setUserInput(e.target.value)}
+					value={userInput}
+				/>
+				{userInput && (
+					<Button
+						onClick={GetSearchApiResult}
+						disabled={loadingSearch}
+					>
+						{loadingSearch ? (
+							<Loader2Icon className="animate-spin" />
+						) : (
+							<Send />
+						)}
+					</Button>
+				)}
+			</div>
 		</div>
 	);
 }

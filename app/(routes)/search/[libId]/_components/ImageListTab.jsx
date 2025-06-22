@@ -6,16 +6,18 @@ function ImageListTab({ chat }) {
 		<div className="flex gap-5 flex-wrap mt-7">
 			{console.log("chat in image:")}
 			{console.log(chat)}
-      {console.log(chat?.searchResult)}
+			{console.log(chat?.searchResult)}
 			{chat?.searchResult?.map((item, index) => (
-				<Image className="bg-accent rounded-xl"
-					loading="lazy"
-					src={item?.thumbnail}
-					alt={item?.title}
-					height={240}
-					width={240}
-					key={index}
-				/>
+				<div className="relative w-[240px] h-[240px] bg-accent rounded-xl overflow-hidden">
+					<Image
+						src={item?.thumbnail}
+						alt={item?.title}
+						fill
+						className="object-cover"
+						loading="lazy"
+						key={index}
+					/>
+				</div>
 			))}
 		</div>
 	);

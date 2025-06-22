@@ -5,7 +5,11 @@ function SourceListTab({ chat }) {
 	return (
 		<div>
 			{chat?.searchResult?.map((item, index) => (
-				<div key={index}>
+				<div
+					key={index}
+					onClick={() => window.open(item?.url, "_blank")}
+					className="cursor-pointer"
+				>
 					<div className="flex gap-2 mt-5 items-center">
 						<h2 className="text-gray-600">{index + 1}</h2>
 						<Image
