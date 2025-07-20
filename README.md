@@ -37,7 +37,7 @@ This project is a full-featured clone of Perplexity AI, demonstrating advanced f
 ### What Makes This Project Special
 
 - **Real-time Search Integration**: Leverages Brave Search API for up-to-date information
-- **AI-Powered Summarization**: Uses Google's Gemini 2.0 Flash for intelligent content processing
+- **AI-Powered Summarization**: Uses Google's Gemini 2.5 Flash for intelligent content processing
 - **Asynchronous Processing**: Background job processing with Inngest for optimal performance
 - **Modern UI/UX**: Responsive design with advanced loading states and animations
 - **Scalable Architecture**: Microservices approach with separated concerns
@@ -79,7 +79,7 @@ Below are some screenshots demonstrating the main features and UI of the Perplex
 - Advanced filtering and sorting capabilities
 
 ### 🤖 **AI-Powered Analysis**
-- **Gemini 2.0 Flash Integration**: Latest Google AI model for content processing
+- **Gemini 2.5 Flash Integration**: Latest Google AI model for content processing
 - **Background Processing**: Non-blocking AI operations with Inngest
 - **Rich Content Formatting**: Markdown rendering with syntax highlighting
 
@@ -106,7 +106,7 @@ Below are some screenshots demonstrating the main features and UI of the Perplex
 
 ### **Backend & APIs**
 - **Brave Search API** - Real-time web search
-- **Google Gemini 2.0 Flash** - AI content processing
+- **Google Gemini 2.5 Flash** - AI content processing
 - **Inngest** - Background job processing
 - **Supabase** - Database and authentication
 - **Clerk** - User authentication and management
@@ -253,7 +253,7 @@ const result = await axios.post("/api/brave-search-api", {
 // Background AI processing
 const aiResp = await step.ai.infer("generate-ai-llm-model-call", {
     model: step.ai.models.gemini({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY,
     })
 });
@@ -302,7 +302,7 @@ const inngestRunId = await inngest.send({
 
 ### **AI Processing Optimizations**
 - **Asynchronous Jobs**: Inngest for scalable background processing
-- **Model Optimization**: Gemini 2.0 Flash for speed and accuracy
+- **Model Optimization**: Gemini 2.5 Flash for speed and accuracy
 - **Response Caching**: Store processed results for reuse
 - **Error Handling**: Graceful degradation and retry mechanisms
 
